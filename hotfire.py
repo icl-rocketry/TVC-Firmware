@@ -161,7 +161,7 @@ def full_reset_and_calibrate(odrv0):
         print("debug state: ", state)
         if state != 1:
 
-            state_machine(odrv0)
+            break
         time.sleep(t_sleep)
 
 
@@ -197,7 +197,7 @@ def lock_pos(odrv0,a,b):
     while True:
         check_state(odrv0)
         if state != 2:
-            state_machine(odrv0)
+            break
         time.sleep(t_sleep)
 
 
@@ -265,7 +265,7 @@ def test_procedure(odrv0):
 
         check_state(odrv0)
         if state != 3:
-            state_machine(odrv0)
+            return #exit straight to caller
         time.sleep(0.0003)
 
     #hold at 10 up for a short bit after circle
@@ -282,49 +282,49 @@ def test_procedure(odrv0):
     while True:
         check_state(odrv0)
         if state != 3:
-            state_machine(odrv0)
+            break
         time.sleep(t_sleep)
 
 
 ##out dated state - ignore
-def debug_old(odrv0):
-    print("entered debug")
-    START_POS_R2 = 0
-    START_POS_D2 = 0
-    CPR = 8192
+# def debug_old(odrv0):
+#     print("entered debug")
+#     START_POS_R2 = 0
+#     START_POS_D2 = 0
+#     CPR = 8192
 
-    odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-    odrv0.axis0.controller.config.input_mode = INPUT_MODE_TRAP_TRAJ
-    odrv0.axis0.trap_traj.config.vel_limit = 10
-    odrv0.axis0.trap_traj.config.accel_limit = 10
-    odrv0.axis0.trap_traj.config.decel_limit = 10
-    odrv0.axis0.motor.config.current_lim = 20
+#     odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+#     odrv0.axis0.controller.config.input_mode = INPUT_MODE_TRAP_TRAJ
+#     odrv0.axis0.trap_traj.config.vel_limit = 10
+#     odrv0.axis0.trap_traj.config.accel_limit = 10
+#     odrv0.axis0.trap_traj.config.decel_limit = 10
+#     odrv0.axis0.motor.config.current_lim = 20
 
-    odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-    odrv0.axis1.controller.config.input_mode = INPUT_MODE_TRAP_TRAJ
-    odrv0.axis1.trap_traj.config.vel_limit = 10
-    odrv0.axis1.trap_traj.config.accel_limit = 10
-    odrv0.axis1.trap_traj.config.decel_limit = 10
-    odrv0.axis1.motor.config.current_lim = 20
+#     odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+#     odrv0.axis1.controller.config.input_mode = INPUT_MODE_TRAP_TRAJ
+#     odrv0.axis1.trap_traj.config.vel_limit = 10
+#     odrv0.axis1.trap_traj.config.accel_limit = 10
+#     odrv0.axis1.trap_traj.config.decel_limit = 10
+#     odrv0.axis1.motor.config.current_lim = 20
 
-    commands = [[6,6],[6,-5],[-5,-5],[-5,6]]
-    odrv0.axis0.controller.input_pos = 0
-    odrv0.axis1.controller.input_pos = 0
+#     commands = [[6,6],[6,-5],[-5,-5],[-5,6]]
+#     odrv0.axis0.controller.input_pos = 0
+#     odrv0.axis1.controller.input_pos = 0
 
-    time.sleep(3)
+#     time.sleep(3)
 
-    while True:
-        for i in commands:
-            print('debug in loop')
-            odrv0.axis0.controller.input_pos=i[0]
-            odrv0.axis1.controller.input_pos=i[1]
-            #add something here to check both motors positions instead of just one
-            while True:
-            #while !(odrv0.axis0.encoder.shadow_count < (i[0]*CPR)-1000 or odrv0.axis0.encoder.shadow_count > i[0]*(CPR)+1000) and (odrv0.axis1.encoder.shadow_count < (i[1]*CPR)-1000 or odrv0.axis1.encoder.shadow_count > i[1]*(CPR)+1000):
-                check_state(odrv0)
-                if state != 4:
-                    state_machine(odrv0)
-                time.sleep(t_sleep)
+#     while True:
+#         for i in commands:
+#             print('debug in loop')
+#             odrv0.axis0.controller.input_pos=i[0]
+#             odrv0.axis1.controller.input_pos=i[1]
+#             #add something here to check both motors positions instead of just one
+#             while True:
+#             #while !(odrv0.axis0.encoder.shadow_count < (i[0]*CPR)-1000 or odrv0.axis0.encoder.shadow_count > i[0]*(CPR)+1000) and (odrv0.axis1.encoder.shadow_count < (i[1]*CPR)-1000 or odrv0.axis1.encoder.shadow_count > i[1]*(CPR)+1000):
+#                 check_state(odrv0)
+#                 if state != 4:
+#                     break
+#                 time.sleep(t_sleep)
 
 
 # modify this as necessary to debug anything
@@ -376,12 +376,12 @@ def debug(odrv0):
 
             check_state(odrv0)
             if state != 4:
-                state_machine(odrv0)
+                break
             time.sleep(0.1)
 
         check_state(odrv0)
         if state != 4:
-            state_machine(odrv0)
+            break
         time.sleep(t_sleep)
 
 
@@ -418,7 +418,7 @@ def armTVC(odrv0):
     while True:
         check_state(odrv0)
         if state != 6:
-            state_machine(odrv0)
+            break
         time.sleep(t_sleep)
 
 def check_gpio_num(odrv0, num):
@@ -439,6 +439,74 @@ def check_state(odrv0):
     #state=0
     print("bit0:", check_gpio_num(odrv0,6), " | bit1:", check_gpio_num(odrv0,7), " | bit2:", check_gpio_num(odrv0,8), " | state:", state, " |  Current", round(odrv0.axis0.motor.current_control.Iq_measured,2), " | Step Count", round(odrv0.axis0.encoder.shadow_count,2), " | Turn Count", round(odrv0.axis0.encoder.shadow_count/8192,2))
     print(" |  Current", round(odrv0.axis1.motor.current_control.Iq_measured,2), " | Step Count", round(odrv0.axis1.encoder.shadow_count,2), " | Turn Count", round(odrv0.axis1.encoder.shadow_count/8192,2))
+
+def initialise(odrv0):
+    odrv0.config.gpio6_mode = 2 #digital pull down
+    odrv0.config.gpio7_mode = 2
+    odrv0.config.gpio8_mode = 2
+
+def enableRCPWM(odrv0):
+    odrv0.config.gpio3_mode = GPIO_MODE_PWM
+    odrv0.config.gpio3_pwm_mapping.min = -10
+    odrv0.config.gpio3_pwm_mapping.max = 10
+    odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis1.controller._input_pos_property
+
+    odrv0.config.gpio2_mode = GPIO_MODE_PWM
+    odrv0.config.gpio2_pwm_mapping.min = -10
+    odrv0.config.gpio2_pwm_mapping.max = 10
+    odrv0.config.gpio2_pwm_mapping.endpoint = odrv0.axis0.controller._input_pos_property
+
+def disableRCPWM(odrv0):
+    odrv0.config.gpio3_pwm_mapping.endpoint = None
+    odrv0.config.gpio2_pwm_mapping.endpoint = None
+
+def pwmState(odrv0):
+    enableRCPWM(odrv0)
+    time.sleep(2)
+    # is rebooting required?
+    # try: # Reboot causes loss of connection, use try to supress errors
+    #     odrv0.save_configuration()
+    #     odrv0.reboot()
+    # except:
+    #     pass
+    # odrv0 = odrive.find_any() # Reconnect to the Odrive
+
+    # print("Odrive: PWM config saved")
+    # time.sleep(2)
+    # print('restarted')
+
+    # odrv0.axis0.motor.config.current_lim = 20
+    # odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    # odrv0.axis0.controller.config.input_filter_bandwidth = 5 # Set the filter bandwidth [1/s]
+    # odrv0.axis0.controller.config.input_mode = INPUT_MODE_POS_FILTER # Activate the setpoint filter
+    
+    # odrv0.axis1.motor.config.current_lim = 20
+    # odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    # odrv0.axis1.controller.config.input_filter_bandwidth = 5 # Set the filter bandwidth [1/s]
+    # odrv0.axis1.controller.config.input_mode = INPUT_MODE_POS_FILTER # Activate the setpoint filter
+    odrv0.axis0.motor.config.current_lim = 30
+    odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    odrv0.axis0.controller.config.input_filter_bandwidth = 3 # Set the filter bandwidth [1/s]
+    odrv0.axis0.controller.config.input_mode = INPUT_MODE_POS_FILTER # Activate the setpoint filter
+    
+    odrv0.axis1.motor.config.current_lim = 30
+    odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    odrv0.axis1.controller.config.input_filter_bandwidth = 3 # Set the filter bandwidth [1/s]
+    odrv0.axis1.controller.config.input_mode = INPUT_MODE_POS_FILTER # Activate the setpoint filter
+
+    #on exit need to disable pwm input!!
+
+    while True:
+        check_state(odrv0)
+        if state != 5:
+            break
+            
+        time.sleep(t_sleep)
+
+    #exit functions
+    disableRCPWM(odrv0)
+
+    # state_machine(odrv0)
 
 def state_machine(odrv0):
 
@@ -471,20 +539,12 @@ def state_machine(odrv0):
     if state == 6:
         armTVC(odrv0)
 
-    if state > 6 or state < 0 or state == 5:
+    if state == 5:
+        pwmState(odrv0)
+
+    if state > 6 or state < 0:
         print("error, incorrect state. Entering idle")
         idle_state(odrv0)
-
-def initialise(odrv0):
-    odrv0.config.gpio6_mode = 2 #digital pull down
-    odrv0.config.gpio7_mode = 2
-    odrv0.config.gpio8_mode = 2
-
-    state_machine(odrv0)
-
-
-
-
 
 now = datetime.now()
 current_time = now.strftime("%H:%M:%S")
@@ -497,3 +557,5 @@ with open(f"logs/TEST_LOG_{date.today()}_{current_time}","x") as logfile:
 
     my_drive = odrive.find_any()
     initialise(my_drive)
+    while True:
+        state_machine(my_drive)
