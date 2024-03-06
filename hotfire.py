@@ -27,6 +27,8 @@ def idle_state(odrv0):
         check_state(odrv0)
         time.sleep(t_sleep)
 
+    return odrv0
+
 
 
 def full_reset_and_calibrate(odrv0):
@@ -56,6 +58,7 @@ def full_reset_and_calibrate(odrv0):
     # odrv0.config.gpio5_mode = GPIO_MODE_DIGITAL_PULL_UP
     odrv0.config.gpio4_mode = GPIO_MODE_DIGITAL
     # odrv0.config.gpio4_mode = GPIO_MODE_DIGITAL_PULL_UP
+
     print("Odrive: Parameters set [4/9]")
 
 
@@ -160,12 +163,10 @@ def full_reset_and_calibrate(odrv0):
         check_state(odrv0)
         print("debug state: ", state)
         if state != 1:
-
             break
         time.sleep(t_sleep)
 
-
-
+    return odrv0
 
 def lock_pos(odrv0,a,b):
     print("entered lock pos")
@@ -199,6 +200,8 @@ def lock_pos(odrv0,a,b):
         if state != 2:
             break
         time.sleep(t_sleep)
+    return odrv0
+
 
 
 def test_procedure(odrv0):
@@ -265,7 +268,7 @@ def test_procedure(odrv0):
 
         check_state(odrv0)
         if state != 3:
-            return #exit straight to caller
+            return odrv0#exit straight to caller
         time.sleep(0.0003)
 
     #hold at 10 up for a short bit after circle
@@ -284,6 +287,8 @@ def test_procedure(odrv0):
         if state != 3:
             break
         time.sleep(t_sleep)
+
+    return odrv0
 
 
 ##out dated state - ignore
@@ -383,6 +388,8 @@ def debug(odrv0):
         if state != 4:
             break
         time.sleep(t_sleep)
+    
+    return odrv0
 
 
 
@@ -420,6 +427,7 @@ def armTVC(odrv0):
         if state != 6:
             break
         time.sleep(t_sleep)
+    return odrv0
 
 def check_gpio_num(odrv0, num):
     return (odrv0.get_gpio_states() & (1 << num)) != 0
@@ -456,20 +464,36 @@ def enableRCPWM(odrv0):
     odrv0.config.gpio2_pwm_mapping.max = 10
     odrv0.config.gpio2_pwm_mapping.endpoint = odrv0.axis0.controller._input_pos_property
 
+    try: # Reboot causes loss of connection, use try to supress errors
+        odrv0.save_configuration()
+        odrv0.reboot()
+    except:
+        pass
+    odrv0 = odrive.find_any() # Reconnect to the Odrive
+
+    return odrv0
+
 def disableRCPWM(odrv0):
     odrv0.config.gpio3_pwm_mapping.endpoint = None
     odrv0.config.gpio2_pwm_mapping.endpoint = None
+    #put both axis into idle 
+    odrv0.axis0.requested_state = AXIS_STATE_IDLE
+    odrv0.axis1.requested_state = AXIS_STATE_IDLE
+
+    try: # Reboot causes loss of connection, use try to supress errors
+        odrv0.save_configuration()
+        odrv0.reboot()
+    except:
+        pass
+    odrv0 = odrive.find_any() # Reconnect to the Odrive
+
+    return odrv0
 
 def pwmState(odrv0):
-    enableRCPWM(odrv0)
+    odrv0 = enableRCPWM(odrv0)
     time.sleep(2)
     # is rebooting required?
-    # try: # Reboot causes loss of connection, use try to supress errors
-    #     odrv0.save_configuration()
-    #     odrv0.reboot()
-    # except:
-    #     pass
-    # odrv0 = odrive.find_any() # Reconnect to the Odrive
+   
 
     # print("Odrive: PWM config saved")
     # time.sleep(2)
@@ -504,47 +528,49 @@ def pwmState(odrv0):
         time.sleep(t_sleep)
 
     #exit functions
-    disableRCPWM(odrv0)
+    odrv0 = disableRCPWM(odrv0)
+
+    return odrv0
 
     # state_machine(odrv0)
 
 def state_machine(odrv0):
+    while True:
+        check_state(odrv0)
+        print("state: ", state)
+        if state == 0:
+            #armTVC(odrv0)
+            odrv0 = idle_state(odrv0)
 
-    check_state(odrv0)
-    print("state: ", state)
-    if state == 0:
-        #armTVC(odrv0)
-        idle_state(odrv0)
+        if state == 1:
+            delay = 0
+            print("preparing calibration...")
+            while delay < 100:
+                odrv0 = idle_state(odrv0)
+                delay += 1
+            odrv0 = full_reset_and_calibrate(odrv0)
 
-    if state == 1:
-        delay = 0
-        print("preparing calibration...")
-        while delay < 100:
-            idle_state(odrv0)
-            delay += 1
-        full_reset_and_calibrate(odrv0)
+        if state == 2:
+            #armTVC(odrv0)
+            odrv0 = lock_pos(odrv0,-9,0)
 
-    if state == 2:
-        #armTVC(odrv0)
-        lock_pos(odrv0,-9,0)
+        if state == 3:
+            #armTVC(odrv0)
+            odrv0 = test_procedure(odrv0)
 
-    if state == 3:
-        #armTVC(odrv0)
-        test_procedure(odrv0)
+        if state == 4:
+            #armTVC(odrv0)
+            odrv0 = debug(odrv0)
 
-    if state == 4:
-        #armTVC(odrv0)
-        debug(odrv0)
+        if state == 6:
+            odrv0 = armTVC(odrv0)
 
-    if state == 6:
-        armTVC(odrv0)
+        if state == 5:
+            odrv0 = pwmState(odrv0)
 
-    if state == 5:
-        pwmState(odrv0)
-
-    if state > 6 or state < 0:
-        print("error, incorrect state. Entering idle")
-        idle_state(odrv0)
+        if state > 6 or state < 0:
+            print("error, incorrect state. Entering idle")
+            odrv0 = idle_state(odrv0)
 
 now = datetime.now()
 current_time = now.strftime("%H:%M:%S")
@@ -557,5 +583,6 @@ with open(f"logs/TEST_LOG_{date.today()}_{current_time}","x") as logfile:
 
     my_drive = odrive.find_any()
     initialise(my_drive)
-    while True:
-        state_machine(my_drive)
+    state_machine(my_drive)
+    # while True:
+        
